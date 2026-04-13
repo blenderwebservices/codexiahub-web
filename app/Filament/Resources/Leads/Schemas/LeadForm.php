@@ -33,6 +33,10 @@ class LeadForm
                     ->label('Dirección IP')
                     ->disabled()
                     ->dehydrated(),
+                TextInput::make('location')
+                    ->label('Ubicación')
+                    ->disabled()
+                    ->dehydrated(),
             ]);
     }
 }
