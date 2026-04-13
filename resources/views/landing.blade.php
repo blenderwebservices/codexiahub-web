@@ -383,13 +383,6 @@
                 </style>
             `;
 
-            const element = document.createElement('div');
-            element.innerHTML = content;
-            element.style.position = 'absolute';
-            element.style.left = '-9999px';
-            element.style.top = '0';
-            document.body.appendChild(element);
-
             const opt = {
                 margin:       10,
                 filename:     `CodexiaHub-${type.toUpperCase()}-${new Date().getTime()}.pdf`,
@@ -400,11 +393,10 @@
 
             const btn = document.getElementById(type + '-pdf-btn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<span>Generando PDF...</span>';
+            btn.innerHTML = '<span>Generando...</span>';
 
-            html2pdf().set(opt).from(element).save().then(() => {
+            html2pdf().set(opt).from(content).save().then(() => {
                 btn.innerHTML = originalText;
-                document.body.removeChild(element);
             });
         }
 
