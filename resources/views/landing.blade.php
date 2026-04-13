@@ -349,12 +349,13 @@
                 : "Clarificador de Roles RACI: Define quién es Responsable, Aprobador, Consultado o Informado.";
             
             const prompt = isRoi ? window.lastRoiPrompt : window.lastRaciPrompt;
-            const analysisHTML = isRoi ? window.lastRoiResult : window.lastRaciResult;
+            let analysisHTML = isRoi ? window.lastRoiResult : window.lastRaciResult;
             
             if (!prompt || !analysisHTML) return;
 
+            // Remove empty white space or prose invert classes if needed by wrapping it nicely
             const content = `
-                <div style="font-family: 'Inter', sans-serif; color: #1e293b; padding: 40px; line-height: 1.6;">
+                <div id="pdf-export-container" style="font-family: 'Inter', sans-serif; color: #1e293b; padding: 40px; line-height: 1.6; background-color: #ffffff; width: 800px;">
                     <h1 style="color: #2563eb; margin-bottom: 5px; font-size: 28px;">${siteName}</h1>
                     <p style="color: #64748b; font-size: 14px; margin-top: 0; margin-bottom: 20px;"><strong>Fecha y hora:</strong> ${date}</p>
                     
@@ -364,25 +365,36 @@
                     </div>
                     
                     <h3 style="color: #334155; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">Prompt del Usuario</h3>
-                    <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; font-family: monospace; color: #334155; margin-bottom: 25px;">
+                    <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; font-family: monospace; color: #334155; margin-bottom: 25px; white-space: pre-wrap;">
                         ${prompt}
                     </div>
                     
                     <h3 style="color: #334155; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">Análisis Generado por IA</h3>
-                    <div style="color: #334155;">
+                    <div class="pdf-analysis-content" style="color: #334155;">
                         ${analysisHTML}
                     </div>
                 </div>
+                <style>
+                    .pdf-analysis-content h1, .pdf-analysis-content h2, .pdf-analysis-content h3 { color: #1e293b; margin-top: 15px; margin-bottom: 10px; }
+                    .pdf-analysis-content p { margin-bottom: 10px; }
+                    .pdf-analysis-content ul, .pdf-analysis-content ol { padding-left: 20px; margin-bottom: 10px; }
+                    .pdf-analysis-content li { margin-bottom: 5px; list-style-type: disc; }
+                    .pdf-analysis-content strong { color: #0f172a; }
+                </style>
             `;
 
             const element = document.createElement('div');
             element.innerHTML = content;
+            element.style.position = 'absolute';
+            element.style.left = '-9999px';
+            element.style.top = '0';
+            document.body.appendChild(element);
 
             const opt = {
                 margin:       10,
                 filename:     `CodexiaHub-${type.toUpperCase()}-${new Date().getTime()}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
@@ -392,6 +404,7 @@
 
             html2pdf().set(opt).from(element).save().then(() => {
                 btn.innerHTML = originalText;
+                document.body.removeChild(element);
             });
         }
 
