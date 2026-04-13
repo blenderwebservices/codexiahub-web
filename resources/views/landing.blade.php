@@ -58,6 +58,11 @@
                 <a href="#servicios" class="hover:text-blue-600 transition">Servicios</a>
                 <a href="#hub-ia" class="hover:text-blue-600 transition font-bold text-blue-600">Centro IA ✨</a>
                 <a href="#metodo" class="hover:text-blue-600 transition">Método</a>
+                @auth
+                    <a href="/admin" class="hover:text-blue-600 transition font-bold">Dashboard</a>
+                @else
+                    <a href="/admin" class="hover:text-blue-600 transition">Login</a>
+                @endauth
             </div>
             <a href="#contacto" class="bg-blue-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-blue-700 transition shadow-lg shadow-blue-200">
                 Diagnóstico Express
