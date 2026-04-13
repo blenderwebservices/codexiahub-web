@@ -13,6 +13,9 @@ class LeadInfolist
             ->components([
                 TextEntry::make('email')
                     ->label('Email address'),
+                TextEntry::make('location')
+                    ->label('Ubicación')
+                    ->placeholder('-'),
                 TextEntry::make('status'),
                 TextEntry::make('source'),
                 TextEntry::make('ip_address')

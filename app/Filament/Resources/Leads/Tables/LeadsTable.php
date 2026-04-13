@@ -19,6 +19,10 @@ class LeadsTable
                     ->label('Correo Electrónico')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('location')
+                    ->label('Ubicación')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('status')
                     ->label('Estado')
                     ->badge()

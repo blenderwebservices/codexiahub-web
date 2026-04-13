@@ -11,5 +11,6 @@ class Lead extends Model
         'status',
         'source',
         'ip_address',
+        'location',
     ];
 }

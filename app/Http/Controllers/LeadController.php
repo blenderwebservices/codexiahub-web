@@ -12,27 +12,50 @@ class LeadController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'recaptcha_token' => 'required',
+            'recaptcha_token' => 'nullable',
         ]);
 
-        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret'   => config('services.recaptcha.secret_key'),
-            'response' => $request->recaptcha_token,
-            'remoteip' => $request->ip(),
-        ]);
+        $recaptchaSecret = config('services.recaptcha.secret_key');
+        
+        if ($recaptchaSecret && !app()->environment('local')) {
+            $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret'   => $recaptchaSecret,
+                'response' => $request->recaptcha_token,
+                'remoteip' => $request->ip(),
+            ]);
 
-        $result = $response->json();
+            $result = $response->json();
 
-        if (!$result['success'] || $result['score'] < 0.5) {
-            return response()->json([
-                'success' => false,
-                'error'   => 'Error de verificación reCAPTCHA. Por favor, inténtalo de nuevo.',
-            ], 422);
+            if (!$result['success'] || (isset($result['score']) && $result['score'] < 0.5)) {
+                return response()->json([
+                    'success' => false,
+                    'error'   => 'Error de verificación reCAPTCHA. Por favor, inténtalo de nuevo.',
+                ], 422);
+            }
+        }
+
+        // Obtener ubicación a partir de la IP
+        $ip = $request->ip();
+        $location = 'Local / Desconocido';
+        
+        if ($ip !== '127.0.0.1' && $ip !== '::1') {
+            try {
+                $locResponse = Http::timeout(3)->get("http://ip-api.com/json/{$ip}");
+                if ($locResponse->successful()) {
+                    $data = $locResponse->json();
+                    if (($data['status'] ?? '') === 'success') {
+                        $location = ($data['city'] ?? 'N/A') . ', ' . ($data['country'] ?? 'N/A');
+                    }
+                }
+            } catch (\Exception $e) {
+                // Silently fail or log
+            }
         }
 
         Lead::create([
             'email'      => $request->email,
-            'ip_address' => $request->ip(),
+            'ip_address' => $ip,
+            'location'   => $location,
             'source'     => 'diagnostico_express',
         ]);
 
