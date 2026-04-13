@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script>
         window.recaptchaSiteKey = "{{ config('services.recaptcha.site_key') }}";
@@ -128,6 +129,12 @@
                     </div>
                     <div id="roi-loading" class="hidden mt-6 text-center py-4"><div class="loader"></div></div>
                     <div id="roi-result" class="hidden mt-6 p-6 bg-blue-900/20 border border-blue-500/30 rounded-2xl text-slate-200 prose prose-invert prose-slate max-w-none"></div>
+                    @auth
+                    <button id="roi-pdf-btn" onclick="downloadPdf('roi')" class="hidden mt-4 w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span>Descargar PDF</span>
+                    </button>
+                    @endauth
                 </div>
 
                 <!-- Herramienta 2: RACI Generator -->
@@ -145,6 +152,12 @@
                     </div>
                     <div id="raci-loading" class="hidden mt-6 text-center py-4"><div class="loader"></div></div>
                     <div id="raci-result" class="hidden mt-6 p-6 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl text-slate-200 prose prose-invert prose-indigo max-w-none"></div>
+                    @auth
+                    <button id="raci-pdf-btn" onclick="downloadPdf('raci')" class="hidden mt-4 w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition flex items-center justify-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span>Descargar PDF</span>
+                    </button>
+                    @endauth
                 </div>
             </div>
         </div>
@@ -293,6 +306,11 @@
             loader.classList.add('hidden');
             btn.classList.remove('hidden');
             btn.innerText = "Recalcular Impacto ✨";
+            
+            window.lastRoiPrompt = userPrompt;
+            window.lastRoiResult = result.innerHTML;
+            const pdfBtn = document.getElementById('roi-pdf-btn');
+            if (pdfBtn) pdfBtn.classList.remove('hidden');
         }
 
         async function generateRACI() {
@@ -315,6 +333,66 @@
             loader.classList.add('hidden');
             btn.classList.remove('hidden');
             btn.innerText = "Refinar Estructura ✨";
+            
+            window.lastRaciPrompt = userPrompt;
+            window.lastRaciResult = result.innerHTML;
+            const pdfBtn = document.getElementById('raci-pdf-btn');
+            if (pdfBtn) pdfBtn.classList.remove('hidden');
+        }
+
+        function downloadPdf(type) {
+            const isRoi = type === 'roi';
+            const siteName = "CodexiaHub";
+            const date = new Date().toLocaleString();
+            const explanation = isRoi 
+                ? "Simulador de ROI de Automatización: Calcula el retorno de inversión al automatizar una tarea repetitiva." 
+                : "Clarificador de Roles RACI: Define quién es Responsable, Aprobador, Consultado o Informado.";
+            
+            const prompt = isRoi ? window.lastRoiPrompt : window.lastRaciPrompt;
+            const analysisHTML = isRoi ? window.lastRoiResult : window.lastRaciResult;
+            
+            if (!prompt || !analysisHTML) return;
+
+            const content = `
+                <div style="font-family: 'Inter', sans-serif; color: #1e293b; padding: 40px; line-height: 1.6;">
+                    <h1 style="color: #2563eb; margin-bottom: 5px; font-size: 28px;">${siteName}</h1>
+                    <p style="color: #64748b; font-size: 14px; margin-top: 0; margin-bottom: 20px;"><strong>Fecha y hora:</strong> ${date}</p>
+                    
+                    <div style="background: #f8fafc; border-left: 4px solid #2563eb; padding: 15px; margin-bottom: 25px;">
+                        <h3 style="color: #334155; margin-top: 0; font-size: 18px;">Herramienta Consultada</h3>
+                        <p style="margin: 0; color: #475569;">${explanation}</p>
+                    </div>
+                    
+                    <h3 style="color: #334155; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">Prompt del Usuario</h3>
+                    <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; font-family: monospace; color: #334155; margin-bottom: 25px;">
+                        ${prompt}
+                    </div>
+                    
+                    <h3 style="color: #334155; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">Análisis Generado por IA</h3>
+                    <div style="color: #334155;">
+                        ${analysisHTML}
+                    </div>
+                </div>
+            `;
+
+            const element = document.createElement('div');
+            element.innerHTML = content;
+
+            const opt = {
+                margin:       10,
+                filename:     `CodexiaHub-${type.toUpperCase()}-${new Date().getTime()}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            const btn = document.getElementById(type + '-pdf-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>Generando PDF...</span>';
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText;
+            });
         }
 
         async function onLeadSubmit(token) {
